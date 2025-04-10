@@ -1,0 +1,38 @@
+{
+  "name": "moveflow-mcp",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/mcp-server.js",
+    "dev": "ts-node src/mcp-server.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lavande/moveflow-mcp.git"
+  },
+  "keywords": [
+    "moveflow",
+    "mcp",
+    "aptos",
+    "blockchain",
+    "streaming"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Lavande/moveflow-mcp/issues"
+  },
+  "homepage": "https://github.com/Lavande/moveflow-mcp#readme",
+  "description": "MCP服务器，用于通过LLM操作MoveFlow功能",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "@moveflow/aptos-sdk": "^0.0.12",
+    "@types/node": "^22.14.0",
+    "dotenv": "^16.4.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "zod": "^3.23.0"
+  }
+}
