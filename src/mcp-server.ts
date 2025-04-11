@@ -80,7 +80,7 @@ const tools = [
   {
     // 查询钱包余额工具
     name: "get_wallet_balance",
-    description: "查询指定钱包地址的余额",
+    description: "查询指定钱包地址的余额，支持使用简化的代币名称如'APT'或完整的类型名称如'0x1::aptos_coin::AptosCoin'",
     inputSchema: {
       type: "object",
       required: [],
@@ -91,7 +91,7 @@ const tools = [
         },
         token_type: {
           type: "string",
-          description: "代币类型，默认为APT"
+          description: "代币类型，可使用简称如'APT'或完整名称，默认为APT代币"
         }
       }
     }
@@ -169,6 +169,7 @@ async function main() {
       }
     };
 
+    let result;
     // 根据工具名称调用相应的功能
     switch (name) {
       case "create_stream":
@@ -178,37 +179,42 @@ async function main() {
           args.token_type as string,
           args.duration as number
         );
-        return {
-          result: parseServiceResult(createResult)
-        };
+        result = parseServiceResult(createResult);
+        break;
       
       case "get_stream":
         const streamResult = await moveflowService.getStream(args.stream_id as string);
-        return {
-          result: parseServiceResult(streamResult)
-        };
+        result = parseServiceResult(streamResult);
+        break;
       
       case "get_account_streams":
         const streamsResult = await moveflowService.getAccountStreams(args.address as string);
-        return {
-          result: parseServiceResult(streamsResult)
-        };
+        result = parseServiceResult(streamsResult);
+        break;
       
       case "cancel_stream":
         const cancelResult = await moveflowService.cancelStream(args.stream_id as string);
-        return {
-          result: parseServiceResult(cancelResult)
-        };
+        result = parseServiceResult(cancelResult);
+        break;
       
       case "get_wallet_balance":
         const balanceResult = await moveflowService.getWalletBalance(args.address as string, args.token_type as string);
-        return {
-          result: parseServiceResult(balanceResult)
-        };
+        result = parseServiceResult(balanceResult);
+        break;
       
       default:
         throw new Error(`工具不存在: ${name}`);
     }
+
+    // 返回符合MCP规范的格式
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(result, null, 2)
+        }
+      ]
+    };
   });
 
   // 连接到stdio传输

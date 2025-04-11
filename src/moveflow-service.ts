@@ -397,6 +397,9 @@ export class MoveFlowService {
       // 如果没有提供地址，使用当前账户地址
       const effectiveAddress = address || this.stream.getSenderAddress().toString();
       
+      // 转换代币类型简称为完整格式
+      const normalizedTokenType = this.normalizeTokenType(tokenType);
+      
       // 使用SDK原生方法获取资源
       const aptosEndpoint = this.network === "mainnet" 
         ? "https://fullnode.mainnet.aptoslabs.com/v1"
@@ -425,11 +428,30 @@ export class MoveFlowService {
         });
       }
       
-      // 查找指定代币的余额
-      const coinResource = data.find((resource: any) => 
-        resource.type === tokenType || 
-        resource.type === "0x1::coin::CoinStore<" + tokenType + ">"
-      );
+      // 查找指定代币的余额 - 使用更灵活的匹配方式
+      const coinResourcePatterns = [
+        normalizedTokenType,                              // 完整格式
+        `0x1::coin::CoinStore<${normalizedTokenType}>`,  // 完整格式包装在CoinStore中
+        new RegExp(`CoinStore<.*${this.getTokenShortName(normalizedTokenType)}.*>$`)  // 使用正则匹配部分名称
+      ];
+      
+      let coinResource = null;
+      
+      // 尝试多种匹配方式
+      for (const pattern of coinResourcePatterns) {
+        if (pattern instanceof RegExp) {
+          coinResource = data.find((resource: any) => pattern.test(resource.type));
+        } else {
+          coinResource = data.find((resource: any) => resource.type === pattern);
+        }
+        
+        if (coinResource) break;
+      }
+      
+      // 如果找不到，尝试寻找任何CoinStore资源
+      if (!coinResource) {
+        coinResource = data.find((resource: any) => resource.type.includes('::coin::CoinStore<'));
+      }
       
       if (!coinResource) {
         return JSON.stringify({
@@ -443,15 +465,20 @@ export class MoveFlowService {
       // 获取余额数据
       const balance = coinResource.data?.coin?.value || "0";
       
+      // 获取实际的代币类型
+      const actualTokenType = coinResource.type.includes('<') 
+        ? coinResource.type.match(/<(.+)>/)?.[1] || normalizedTokenType
+        : normalizedTokenType;
+      
       // 格式化余额
-      const formattedBalance = this.formatAmount(balance, tokenType);
+      const formattedBalance = this.formatAmount(balance, actualTokenType);
       
       return JSON.stringify({
         success: true,
         balance: formattedBalance,
         raw_balance: balance,
         address: effectiveAddress,
-        token_type: tokenType,
+        token_type: actualTokenType,
         resource_type: coinResource.type
       });
     } catch (error) {
@@ -460,6 +487,34 @@ export class MoveFlowService {
         error: `查询余额失败: ${error}`,
       });
     }
+  }
+  
+  // 将代币简称转换为完整格式
+  private normalizeTokenType(tokenType: string): string {
+    if (!tokenType || tokenType.trim() === "") {
+      return "0x1::aptos_coin::AptosCoin";
+    }
+    
+    // 已经是完整格式
+    if (tokenType.includes("::")) {
+      return tokenType;
+    }
+    
+    // 常见代币简称转换
+    const tokenMap: Record<string, string> = {
+      "APT": "0x1::aptos_coin::AptosCoin",
+      "USDT": "0x2::usdt::USDT", // 这是示例，根据实际情况修改
+      "USDC": "0x2::usdc::USDC"  // 这是示例，根据实际情况修改
+    };
+    
+    return tokenMap[tokenType.toUpperCase()] || tokenType;
+  }
+  
+  // 从完整代币类型提取短名称
+  private getTokenShortName(tokenType: string): string {
+    // 从完整路径中提取最后一部分
+    const parts = tokenType.split("::");
+    return parts[parts.length - 1] || tokenType;
   }
 
   // 格式化金额的辅助方法
