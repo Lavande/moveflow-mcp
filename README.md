@@ -54,12 +54,14 @@ npm run dev
 
 服务器提供以下MCP工具：
 
-1. `create_stream` - 创建支付流
+1. `batch_create_stream` - 批量创建支付流（可以创建单个或多个）
    - 参数：
-     - `recipient`: 接收方地址
-     - `amount`: 支付金额
+     - `recipients`: 接收方地址列表
+     - `amounts`: 支付金额列表（与接收方地址列表长度一致）
      - `token_type`: 代币类型
      - `duration`: 持续时间（秒）
+     - `names`: 支付流名称列表（可选）
+     - 其他可选配置如interval, start_delay等
 
 2. `get_stream` - 获取支付流详情
    - 参数：

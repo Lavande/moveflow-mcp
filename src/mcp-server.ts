@@ -6,67 +6,9 @@ import { z } from "zod";
 // 工具定义
 const tools = [
   {
-    // 创建支付流工具
-    name: "create_stream",
-    description: "创建一个新的支付流",
-    inputSchema: {
-      type: "object",
-      required: ["recipient", "amount", "token_type", "duration"],
-      properties: {
-        recipient: {
-          type: "string",
-          description: "接收方地址"
-        },
-        amount: {
-          type: "string",
-          description: "支付金额"
-        },
-        token_type: {
-          type: "string",
-          description: "代币类型"
-        },
-        duration: {
-          type: "integer",
-          description: "持续时间（秒）"
-        },
-        interval: {
-          type: "integer",
-          description: "释放时间间隔（秒），默认为86400（每天）"
-        },
-        start_delay: {
-          type: "integer",
-          description: "开始前延迟时间（秒），默认为300（5分钟）"
-        },
-        cliff_time_enabled: {
-          type: "boolean",
-          description: "是否启用悬崖时间，默认为true"
-        },
-        pauseable: {
-          type: "string",
-          description: "谁可以暂停流：sender（发送方）、recipient（接收方）、both（双方）",
-          enum: ["sender", "recipient", "both"]
-        },
-        closeable: {
-          type: "string",
-          description: "谁可以关闭流：sender（发送方）、recipient（接收方）、both（双方）",
-          enum: ["sender", "recipient", "both"]
-        },
-        recipient_modifiable: {
-          type: "string",
-          description: "谁可以修改接收方：sender（发送方）、recipient（接收方）、both（双方）、none（无人）",
-          enum: ["sender", "recipient", "both", "none"]
-        },
-        remark: {
-          type: "string",
-          description: "备注信息"
-        }
-      }
-    }
-  },
-  {
     // 批量创建支付流工具
     name: "batch_create_stream",
-    description: "批量创建多个支付流，一次最多创建200个",
+    description: "批量创建多个支付流，可以只创建一个或多个，一次最多创建200个",
     inputSchema: {
       type: "object",
       required: ["recipients", "amounts", "token_type", "duration"],
@@ -237,7 +179,7 @@ async function main() {
   // 创建MCP服务器
   const server = new Server({
     name: "moveflow-mcp-server",
-    version: "1.0.0"
+    version: "1.0.1"
   }, {
     capabilities: {
       // 使用tools能力，并直接在这里定义工具
@@ -274,26 +216,6 @@ async function main() {
     let result;
     // 根据工具名称调用相应的功能
     switch (name) {
-      case "create_stream":
-        const createResult = await moveflowService.createStream(
-          args.recipient as string,
-          args.amount as string,
-          args.token_type as string,
-          args.duration as number,
-          {
-            interval: args.interval as number,
-            start_delay: args.start_delay as number,
-            cliff_time_enabled: args.cliff_time_enabled as boolean,
-            pauseable: args.pauseable as string,
-            closeable: args.closeable as string,
-            recipient_modifiable: args.recipient_modifiable as string,
-            remark: args.remark as string,
-          }
-        );
-        return {
-          result: parseServiceResult(createResult)
-        };
-      
       case "batch_create_stream":
         const batchCreateResult = await moveflowService.batchCreateStream(
           args.recipients as string[],
@@ -312,7 +234,12 @@ async function main() {
           }
         );
         return {
-          result: parseServiceResult(batchCreateResult)
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(parseServiceResult(batchCreateResult))
+            }
+          ]
         };
       
       case "get_stream":
@@ -325,15 +252,25 @@ async function main() {
           
           const streamResult = await Promise.race([streamPromise, timeoutPromise]);
           return {
-            result: parseServiceResult(streamResult as string)
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(parseServiceResult(streamResult as string))
+              }
+            ]
           };
         } catch (error: any) {
           return {
-            result: {
-              success: false,
-              error: `操作超时或失败: ${error.message || String(error)}`,
-              建议: "请尝试使用更小的查询范围或稍后再试"
-            }
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  success: false,
+                  error: `操作超时或失败: ${error.message || String(error)}`,
+                  建议: "请尝试使用更小的查询范围或稍后再试"
+                })
+              }
+            ]
           };
         }
       
@@ -365,43 +302,54 @@ async function main() {
           
           const streamsResult = await Promise.race([streamsPromise, timeoutPromise, feedbackPromise]);
           return {
-            result: parseServiceResult(streamsResult as string)
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(parseServiceResult(streamsResult as string))
+              }
+            ]
           };
         } catch (error: any) {
           return {
-            result: {
-              success: false,
-              error: `获取账户流失败: ${error.message || String(error)}`,
-              建议: "请尝试减少查询范围或提供具体的账户地址",
-              推荐操作: "尝试先获取单个流信息，或查询特定时间段内的流"
-            }
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  success: false,
+                  error: `获取账户流失败: ${error.message || String(error)}`,
+                  建议: "请尝试减少查询范围或提供具体的账户地址",
+                  推荐操作: "尝试先获取单个流信息，或查询特定时间段内的流"
+                })
+              }
+            ]
           };
         }
       
       case "cancel_stream":
         const cancelResult = await moveflowService.cancelStream(args.stream_id as string);
         return {
-          result: parseServiceResult(cancelResult)
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(parseServiceResult(cancelResult))
+            }
+          ]
         };
       
       case "get_wallet_balance":
         const balanceResult = await moveflowService.getWalletBalance(args.address as string, args.token_type as string);
-        result = parseServiceResult(balanceResult);
-        break;
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(parseServiceResult(balanceResult))
+            }
+          ]
+        };
       
       default:
         throw new Error(`工具不存在: ${name}`);
     }
-
-    // 返回符合MCP规范的格式
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(result, null, 2)
-        }
-      ]
-    };
   });
 
   // 连接到stdio传输
