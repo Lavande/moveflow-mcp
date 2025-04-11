@@ -76,6 +76,25 @@ const tools = [
         }
       }
     }
+  },
+  {
+    // 查询钱包余额工具
+    name: "get_wallet_balance",
+    description: "查询指定钱包地址的余额",
+    inputSchema: {
+      type: "object",
+      required: [],
+      properties: {
+        address: {
+          type: "string",
+          description: "钱包地址，如果不提供则使用当前账户"
+        },
+        token_type: {
+          type: "string",
+          description: "代币类型，默认为APT"
+        }
+      }
+    }
   }
 ];
 
@@ -137,31 +156,54 @@ async function main() {
   server.setRequestHandler(ExecuteToolRequestSchema, async (request: ExecuteToolRequest) => {
     const { name, arguments: args = {} } = request.params;
 
+    // 解析service返回的JSON字符串为对象
+    const parseServiceResult = (resultStr: string) => {
+      try {
+        return JSON.parse(resultStr);
+      } catch (error) {
+        return { 
+          success: false, 
+          error: `解析结果失败: ${error}`, 
+          raw: resultStr 
+        };
+      }
+    };
+
     // 根据工具名称调用相应的功能
     switch (name) {
       case "create_stream":
+        const createResult = await moveflowService.createStream(
+          args.recipient as string,
+          args.amount as string,
+          args.token_type as string,
+          args.duration as number
+        );
         return {
-          result: await moveflowService.createStream(
-            args.recipient as string,
-            args.amount as string,
-            args.token_type as string,
-            args.duration as number
-          )
+          result: parseServiceResult(createResult)
         };
       
       case "get_stream":
+        const streamResult = await moveflowService.getStream(args.stream_id as string);
         return {
-          result: await moveflowService.getStream(args.stream_id as string)
+          result: parseServiceResult(streamResult)
         };
       
       case "get_account_streams":
+        const streamsResult = await moveflowService.getAccountStreams(args.address as string);
         return {
-          result: await moveflowService.getAccountStreams(args.address as string)
+          result: parseServiceResult(streamsResult)
         };
       
       case "cancel_stream":
+        const cancelResult = await moveflowService.cancelStream(args.stream_id as string);
         return {
-          result: await moveflowService.cancelStream(args.stream_id as string)
+          result: parseServiceResult(cancelResult)
+        };
+      
+      case "get_wallet_balance":
+        const balanceResult = await moveflowService.getWalletBalance(args.address as string, args.token_type as string);
+        return {
+          result: parseServiceResult(balanceResult)
         };
       
       default:
