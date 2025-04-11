@@ -27,7 +27,7 @@
   "homepage": "https://github.com/Lavande/moveflow-mcp#readme",
   "description": "MCP服务器，用于通过LLM操作MoveFlow功能",
   "dependencies": {
-    "@aptos-labs/ts-sdk": "^1.8.5",
+    "@aptos-labs/ts-sdk": "^1.38.0",
     "@modelcontextprotocol/sdk": "^1.9.0",
     "@moveflow/aptos-sdk": "^0.0.12",
     "@types/node": "^22.14.0",

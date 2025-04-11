@@ -28,6 +28,108 @@ const tools = [
         duration: {
           type: "integer",
           description: "持续时间（秒）"
+        },
+        interval: {
+          type: "integer",
+          description: "释放时间间隔（秒），默认为86400（每天）"
+        },
+        start_delay: {
+          type: "integer",
+          description: "开始前延迟时间（秒），默认为300（5分钟）"
+        },
+        cliff_time_enabled: {
+          type: "boolean",
+          description: "是否启用悬崖时间，默认为true"
+        },
+        pauseable: {
+          type: "string",
+          description: "谁可以暂停流：sender（发送方）、recipient（接收方）、both（双方）",
+          enum: ["sender", "recipient", "both"]
+        },
+        closeable: {
+          type: "string",
+          description: "谁可以关闭流：sender（发送方）、recipient（接收方）、both（双方）",
+          enum: ["sender", "recipient", "both"]
+        },
+        recipient_modifiable: {
+          type: "string",
+          description: "谁可以修改接收方：sender（发送方）、recipient（接收方）、both（双方）、none（无人）",
+          enum: ["sender", "recipient", "both", "none"]
+        },
+        remark: {
+          type: "string",
+          description: "备注信息"
+        }
+      }
+    }
+  },
+  {
+    // 批量创建支付流工具
+    name: "batch_create_stream",
+    description: "批量创建多个支付流，一次最多创建200个",
+    inputSchema: {
+      type: "object",
+      required: ["recipients", "amounts", "token_type", "duration"],
+      properties: {
+        recipients: {
+          type: "array",
+          items: {
+            type: "string"
+          },
+          description: "接收方地址列表"
+        },
+        amounts: {
+          type: "array",
+          items: {
+            type: "string"
+          },
+          description: "对应的支付金额列表，长度必须与地址列表相同"
+        },
+        token_type: {
+          type: "string",
+          description: "代币类型"
+        },
+        duration: {
+          type: "integer",
+          description: "持续时间（秒）"
+        },
+        names: {
+          type: "array",
+          items: {
+            type: "string"
+          },
+          description: "可选的支付流名称列表，若不提供则自动生成"
+        },
+        interval: {
+          type: "integer",
+          description: "释放时间间隔（秒），默认为86400（每天）"
+        },
+        start_delay: {
+          type: "integer",
+          description: "开始前延迟时间（秒），默认为300（5分钟）"
+        },
+        cliff_time_enabled: {
+          type: "boolean",
+          description: "是否启用悬崖时间，默认为true"
+        },
+        pauseable: {
+          type: "string",
+          description: "谁可以暂停流：sender（发送方）、recipient（接收方）、both（双方）",
+          enum: ["sender", "recipient", "both"]
+        },
+        closeable: {
+          type: "string",
+          description: "谁可以关闭流：sender（发送方）、recipient（接收方）、both（双方）",
+          enum: ["sender", "recipient", "both"]
+        },
+        recipient_modifiable: {
+          type: "string",
+          description: "谁可以修改接收方：sender（发送方）、recipient（接收方）、both（双方）、none（无人）",
+          enum: ["sender", "recipient", "both", "none"]
+        },
+        remark: {
+          type: "string",
+          description: "备注信息"
         }
       }
     }
@@ -177,25 +279,110 @@ async function main() {
           args.recipient as string,
           args.amount as string,
           args.token_type as string,
-          args.duration as number
+          args.duration as number,
+          {
+            interval: args.interval as number,
+            start_delay: args.start_delay as number,
+            cliff_time_enabled: args.cliff_time_enabled as boolean,
+            pauseable: args.pauseable as string,
+            closeable: args.closeable as string,
+            recipient_modifiable: args.recipient_modifiable as string,
+            remark: args.remark as string,
+          }
         );
-        result = parseServiceResult(createResult);
-        break;
+        return {
+          result: parseServiceResult(createResult)
+        };
+      
+      case "batch_create_stream":
+        const batchCreateResult = await moveflowService.batchCreateStream(
+          args.recipients as string[],
+          args.amounts as string[],
+          args.token_type as string,
+          args.duration as number,
+          args.names as string[] | undefined,
+          {
+            interval: args.interval as number,
+            start_delay: args.start_delay as number,
+            cliff_time_enabled: args.cliff_time_enabled as boolean,
+            pauseable: args.pauseable as string,
+            closeable: args.closeable as string,
+            recipient_modifiable: args.recipient_modifiable as string,
+            remark: args.remark as string,
+          }
+        );
+        return {
+          result: parseServiceResult(batchCreateResult)
+        };
       
       case "get_stream":
-        const streamResult = await moveflowService.getStream(args.stream_id as string);
-        result = parseServiceResult(streamResult);
-        break;
+        // 设置操作超时
+        try {
+          const streamPromise = moveflowService.getStream(args.stream_id as string);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("获取流信息请求超时")), 20000)
+          );
+          
+          const streamResult = await Promise.race([streamPromise, timeoutPromise]);
+          return {
+            result: parseServiceResult(streamResult as string)
+          };
+        } catch (error: any) {
+          return {
+            result: {
+              success: false,
+              error: `操作超时或失败: ${error.message || String(error)}`,
+              建议: "请尝试使用更小的查询范围或稍后再试"
+            }
+          };
+        }
       
       case "get_account_streams":
-        const streamsResult = await moveflowService.getAccountStreams(args.address as string);
-        result = parseServiceResult(streamsResult);
-        break;
+        // 设置更长的超时，带进度反馈
+        try {
+          // 使用Promise.race处理可能的超时
+          const streamsPromise = moveflowService.getAccountStreams(args.address as string);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("获取账户流请求超时(40秒)")), 40000)
+          );
+          
+          // 添加进度反馈
+          let feedbackSent = false;
+          const feedbackPromise = new Promise(async (resolve) => {
+            // 等待10秒后发送进度反馈
+            await new Promise(r => setTimeout(r, 10000));
+            if (!feedbackSent) {
+              console.log("操作仍在进行中，正在等待结果...");
+              feedbackSent = true;
+            }
+            // 继续等待结果
+            await new Promise(r => setTimeout(r, 10000));
+            if (!feedbackSent) {
+              console.log("操作仍在进行，可能需要更长时间...");
+            }
+            // 这个Promise不应该resolve，它只是用来反馈进度
+          });
+          
+          const streamsResult = await Promise.race([streamsPromise, timeoutPromise, feedbackPromise]);
+          return {
+            result: parseServiceResult(streamsResult as string)
+          };
+        } catch (error: any) {
+          return {
+            result: {
+              success: false,
+              error: `获取账户流失败: ${error.message || String(error)}`,
+              建议: "请尝试减少查询范围或提供具体的账户地址",
+              推荐操作: "尝试先获取单个流信息，或查询特定时间段内的流"
+            }
+          };
+        }
       
       case "cancel_stream":
         const cancelResult = await moveflowService.cancelStream(args.stream_id as string);
-        result = parseServiceResult(cancelResult);
-        break;
+        return {
+          result: parseServiceResult(cancelResult)
+        };
       
       case "get_wallet_balance":
         const balanceResult = await moveflowService.getWalletBalance(args.address as string, args.token_type as string);
