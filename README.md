@@ -1,103 +1,89 @@
 # MoveFlow MCP 服务器
 
-这是一个用于通过LLM操作[MoveFlow](https://github.com/Move-Flow/moveflow-sdk-aptos)功能的MCP服务器。通过该服务器，LLM可以创建、查询和管理Aptos区块链上的MoveFlow支付流。
+MoveFlow MCP (Model Context Protocol) 服务器是一个基于TypeScript开发的应用程序，它提供了与MoveFlow服务交互的API接口，使AI助手能够直接创建和管理Aptos区块链上的支付流。
 
-## 功能
+## 目录结构
 
-- 创建支付流
-- 获取支付流详情
-- 获取账户所有支付流
-- 取消支付流
+### 根目录
+- `src/` - 源代码目录
+- `dist/` - 编译后的JavaScript代码
+- `package.json` - 项目配置和依赖管理
+- `tsconfig.json` - TypeScript编译配置
 
-## 安装
+### 源代码目录 (src)
 
+#### 主要入口文件
+- `index.ts` - 应用程序主入口文件，负责启动MCP服务器
+
+#### 配置 (src/config)
+- `index.ts` - 包含全局配置项，如API端点、默认值和环境变量
+
+#### 模型定义 (src/models)
+- `types.ts` - 定义类型接口和数据模型
+
+#### 服务 (src/services)
+- `base-service.ts` - 基础服务类，提供共享的Stream实例和配置
+- `moveflow-service.ts` - 主MoveFlow服务类，整合所有其他服务功能
+- `stream-creation-service.ts` - 处理创建单个流和批量创建流的功能
+- `stream-query-service.ts` - 提供流信息查询和账户流列表获取功能 
+- `stream-management-service.ts` - 处理流管理操作，如取消流
+- `wallet-service.ts` - 提供钱包相关功能，如查询余额
+- `stream-utils.ts` - 流工具服务，包含格式化和数据处理辅助方法
+
+#### 工具 (src/tools)
+- `definitions.ts` - 定义MCP工具的接口结构和参数验证
+- `handlers.ts` - 实现MCP工具的处理逻辑
+
+#### 工具函数 (src/utils)
+- `helpers.ts` - 提供各种辅助功能，如格式化、转换和网络请求
+
+## 功能概述
+
+该MCP服务器提供了以下核心功能：
+
+1. **创建支付流** - 创建单个支付流，指定接收方、金额和时间参数
+2. **批量创建支付流** - 一次操作创建多个支付流
+3. **查询支付流** - 获取单个支付流的详细信息
+4. **查询账户流** - 获取某个账户的所有发送和接收的支付流
+5. **取消支付流** - 终止一个正在进行的支付流
+6. **查询钱包余额** - 获取账户余额信息
+
+## 使用说明
+
+### 安装依赖
 ```bash
-# 克隆仓库
-git clone https://github.com/your-username/moveflow-mcp.git
-cd moveflow-mcp
-
-# 安装依赖
 npm install
 ```
 
-## 配置
-
-在项目根目录创建`.env`文件：
-
-```
-# MoveFlow Aptos配置
-APTOS_PRIVATE_KEY=your_private_key_here
-APTOS_NETWORK=testnet  # 可选：mainnet, testnet, devnet
-```
-
-## 使用
-
-### 构建项目
-
+### 编译代码
 ```bash
 npm run build
 ```
 
 ### 运行服务器
-
 ```bash
-npm start
+node dist/index.js
 ```
 
-### 开发模式
-
+### 使用MCP Inspector调试
 ```bash
-npm run dev
+npx @modelcontextprotocol/inspector node dist/index.js
 ```
 
-## 工具说明
+## 集成到Claude
+可通过Claude Desktop配置文件集成此MCP服务器，让Claude AI能够直接使用MoveFlow功能：
 
-服务器提供以下MCP工具：
-
-1. `batch_create_stream` - 批量创建支付流（可以创建单个或多个）
-   - 参数：
-     - `recipients`: 接收方地址列表
-     - `amounts`: 支付金额列表（与接收方地址列表长度一致）
-     - `token_type`: 代币类型
-     - `duration`: 持续时间（秒）
-     - `names`: 支付流名称列表（可选）
-     - 其他可选配置如interval, start_delay等
-
-2. `get_stream` - 获取支付流详情
-   - 参数：
-     - `stream_id`: 支付流ID
-
-3. `get_account_streams` - 获取账户所有支付流
-   - 参数：
-     - `address`: 账户地址（可选）
-
-4. `cancel_stream` - 取消支付流
-   - 参数：
-     - `stream_id`: 支付流ID
-
-## 与LLM集成
-
-可以通过MCP协议将此服务器与支持MCP的LLM客户端集成，例如：
-
-```typescript
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-
-// 初始化客户端
-const client = new Client({ name: "mcp-client", version: "1.0.0" });
-
-// 连接到服务器
-const transport = new StdioClientTransport({
-  command: "node",
-  args: ["dist/mcp-server.js"]
-});
-await client.connect(transport);
-
-// 获取工具列表
-const toolsResult = await client.listTools();
-console.log("可用工具:", toolsResult.tools.map(({ name }) => name));
-
-// 现在可以将这些工具提供给LLM使用
+```json
+{
+    "mcpServers": {
+        "moveflow": {
+            "command": "node",
+            "args": [
+                "/绝对路径/到/你的项目/dist/index.js"
+            ]
+        }
+    }
+}
 ```
 
 ## 许可证
