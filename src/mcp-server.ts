@@ -1,6 +1,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { MoveFlowService } from "./moveflow-service";
+import { MoveFlowService } from "./services/moveflow-service";
 import { z } from "zod";
 import { mcpTools } from "./tools/definitions";
 
