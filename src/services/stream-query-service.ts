@@ -59,7 +59,6 @@ export class StreamQueryService extends BaseService {
       }
       
       const normalizedAddress = normalizeAddress(targetAddress);
-      console.log(`查询地址 ${normalizedAddress} 的所有流...`);
       
       // 获取API URL
       const apiUrl = config.APTOS_NETWORK.toLowerCase() === "mainnet" 
@@ -75,7 +74,6 @@ export class StreamQueryService extends BaseService {
       );
       
       if (!userTxResponse.ok) {
-        console.log(`API响应错误，状态码: ${userTxResponse.status}`);
         return JSON.stringify({
           success: false,
           error: `获取地址 ${normalizedAddress} 的交易失败: 服务器返回状态码 ${userTxResponse.status}`
@@ -86,7 +84,6 @@ export class StreamQueryService extends BaseService {
       
       // 确保transactions是一个数组
       if (!Array.isArray(transactions)) {
-        console.log(`API返回的交易记录不是数组:`, transactions);
         return JSON.stringify({
           success: true,
           streams: [],
@@ -103,8 +100,6 @@ export class StreamQueryService extends BaseService {
                  event.type.includes(contractAddress) || event.type.includes('stream')));
       });
       
-      console.log(`找到 ${moveflowTxns.length} 个与MoveFlow相关的交易`);
-      
       // 2. 从这些交易中提取事件
       let streamEvents: any[] = [];
       for (const tx of moveflowTxns) {
@@ -118,7 +113,6 @@ export class StreamQueryService extends BaseService {
       }
       
       // 3. 从事件中获取有关流的完整信息
-      console.log(`从交易中提取出 ${streamEvents.length} 个流相关事件`);
       
       // 使用Map去重，以流ID为键
       const streamEventsMap = new Map<string, any>();
@@ -156,7 +150,7 @@ export class StreamQueryService extends BaseService {
           const formattedStream = this.streamUtils.formatStreamData(event.data);
           streams.push(formattedStream);
         } catch (error) {
-          console.error(`格式化流事件失败:`, error);
+          // 错误处理但不输出日志
         }
       }
       
