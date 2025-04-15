@@ -83,32 +83,16 @@ export class ToolHandlers {
    * 获取账户的所有支付流
    */
   async handleGetAccountStreams(args: any): Promise<any> {
-    // 设置更长的超时，带进度反馈
     try {
       // 使用Promise.race处理可能的超时
       const streamsPromise = this.moveflowService.getAccountStreams(args.address as string);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("获取账户流请求超时(40秒)")), config.TIMEOUT.ACCOUNT_STREAMS)
+        setTimeout(() => reject(new Error(`获取账户流请求超时(${config.TIMEOUT.ACCOUNT_STREAMS / 1000}秒)`)), 
+          config.TIMEOUT.ACCOUNT_STREAMS)
       );
       
-      // 添加进度反馈
-      let feedbackSent = false;
-      const feedbackPromise = new Promise(async (resolve) => {
-        // 等待10秒后发送进度反馈
-        await new Promise(r => setTimeout(r, 10000));
-        if (!feedbackSent) {
-          console.log("操作仍在进行中，正在等待结果...");
-          feedbackSent = true;
-        }
-        // 继续等待结果
-        await new Promise(r => setTimeout(r, 10000));
-        if (!feedbackSent) {
-          console.log("操作仍在进行，可能需要更长时间...");
-        }
-        // 这个Promise不应该resolve，它只是用来反馈进度
-      });
-      
-      const streamsResult = await Promise.race([streamsPromise, timeoutPromise, feedbackPromise]);
+      // 只保留必要的Promise.race处理超时
+      const streamsResult = await Promise.race([streamsPromise, timeoutPromise]);
       return {
         content: [
           {
@@ -125,8 +109,7 @@ export class ToolHandlers {
             text: JSON.stringify({
               success: false,
               error: `获取账户流失败: ${error.message || String(error)}`,
-              建议: "请尝试减少查询范围或提供具体的账户地址",
-              推荐操作: "尝试先获取单个流信息，或查询特定时间段内的流"
+              建议: "请尝试减少查询范围或提供具体的账户地址"
             })
           }
         ]
@@ -175,7 +158,7 @@ export class ToolHandlers {
       case "batch_create_stream":
         return this.handleBatchCreateStream(args);
       
-      case "get_stream":
+      case "get_stream_info":
         return this.handleGetStream(args);
       
       case "get_account_streams":

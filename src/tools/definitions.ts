@@ -77,7 +77,7 @@ export const mcpTools: McpTool[] = [
   },
   {
     // 获取支付流信息工具
-    name: "get_stream",
+    name: "get_stream_info",
     description: "获取支付流详情",
     inputSchema: {
       type: "object",

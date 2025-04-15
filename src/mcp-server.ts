@@ -105,12 +105,13 @@ async function main() {
           ]
         };
       
-      case "get_stream":
+      case "get_stream_info":
         // 设置操作超时
         try {
           const streamPromise = moveflowService.getStream(args.stream_id as string);
           const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("获取流信息请求超时")), 20000)
+            setTimeout(() => reject(new Error(`获取流信息请求超时(${config.TIMEOUT.STREAM_INFO / 1000}秒)`)), 
+              config.TIMEOUT.STREAM_INFO)
           );
           
           const streamResult = await Promise.race([streamPromise, timeoutPromise]);
