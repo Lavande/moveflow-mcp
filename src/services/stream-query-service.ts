@@ -97,49 +97,53 @@ export class StreamQueryService extends BaseService {
         }
       }
       
-      // 3. 从事件中提取流ID
-      const streamIds = new Set<string>();
+      // 3. 从事件中获取有关流的完整信息
+      console.log(`从交易中提取出 ${streamEvents.length} 个流相关事件`);
+      
+      // 使用Map去重，以流ID为键
+      const streamEventsMap = new Map<string, any>();
+      
       streamEvents.forEach(event => {
+        if (!event.data) return;
+        
+        // 尝试多种可能的ID字段名
         const possibleIdFields = ['id', 'stream_id', 'streamId'];
         for (const field of possibleIdFields) {
-          if (event.data?.[field]) {
-            streamIds.add(event.data[field]);
+          if (event.data[field]) {
+            const streamId = event.data[field];
+            
+            // 如果这个流ID已经存在，且现有事件更详细，则跳过
+            if (streamEventsMap.has(streamId)) {
+              const existingEvent = streamEventsMap.get(streamId);
+              // 通常更新事件比创建事件包含更多信息
+              if (Object.keys(existingEvent.data).length > Object.keys(event.data).length) {
+                continue;
+              }
+            }
+            
+            // 保存事件数据
+            streamEventsMap.set(streamId, event);
             break;
           }
         }
       });
       
-      // 4. 获取每个流的详情
-      const streamIdsArray = Array.from(streamIds);
-      console.log(`找到 ${streamIdsArray.length} 个流ID，开始获取详细信息...`);
-      
-      // 限制处理的流数量以避免请求过多
-      const maxStreamsToProcess = config.MAX_STREAMS_TO_PROCESS || 5;
-      const limitedStreamIds = streamIdsArray.slice(0, maxStreamsToProcess);
-      
-      // 并行获取所有流的详情
+      // 将事件转换为流信息
       const streams = [];
-      for (const streamId of limitedStreamIds) {
+      for (const [_, event] of streamEventsMap.entries()) {
         try {
-          // 使用SDK方法获取流信息
-          const streamInfo = await this.stream.fetchStream(streamId);
-          if (streamInfo) {
-            // 格式化流信息
-            const formattedStream = this.streamUtils.formatStreamData(streamInfo);
-            streams.push(formattedStream);
-          }
-          // 添加短暂延迟，避免请求过于频繁
-          await delay(200);
+          // 直接使用事件数据
+          const formattedStream = this.streamUtils.formatStreamData(event.data);
+          streams.push(formattedStream);
         } catch (error) {
-          console.error(`获取流 ${streamId} 详情失败:`, error);
+          console.error(`格式化流事件失败:`, error);
         }
       }
       
       return JSON.stringify({
         success: true,
         streams,
-        total: streamIdsArray.length,
-        processed: streams.length
+        total: streams.length
       });
     } catch (error) {
       return JSON.stringify({

@@ -51,8 +51,25 @@ export const normalizeTokenType = (tokenType: string): string => {
  * 从完整代币类型提取短名称
  */
 export const getTokenShortName = (tokenType: string): string => {
-  const parts = tokenType.split("::");
-  return parts[parts.length - 1] || tokenType;
+  if (!tokenType) return 'APT';
+  
+  // 如果是标准APTOS代币格式 0x1::aptos_coin::AptosCoin
+  if (tokenType.includes('::aptos_coin::AptosCoin') || tokenType.includes('0x1::aptos_coin')) {
+    return 'APT';
+  }
+  
+  // 如果是标准代币格式 0x1::token::TokenType
+  if (tokenType.includes('::')) {
+    const parts = tokenType.split('::');
+    return parts[parts.length - 1] || 'TOKEN';
+  }
+  
+  // 如果是完整的地址，尝试返回简短版本
+  if (tokenType.startsWith('0x') && tokenType.length > 10) {
+    return 'TOKEN';
+  }
+  
+  return tokenType || 'APT';
 };
 
 /**

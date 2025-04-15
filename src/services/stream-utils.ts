@@ -102,8 +102,13 @@ export class StreamUtils extends BaseService {
         (BigInt(safeGetFromStreamData('deposit_amount', '0')) - BigInt(safeGetFromStreamData('computed_amount', '0'))).toString()
       );
       
-      // 获取代币类型
-      const coinType = safeGetFromStreamData('coin_type', '未知代币');
+      // 获取代币类型 - 检查多个可能的字段名
+      const coinType = safeGetFromStreamData('coin_type') !== '未知' 
+        ? safeGetFromStreamData('coin_type')
+        : (safeGetFromStreamData('asset_type') !== '未知'
+          ? safeGetFromStreamData('asset_type')
+          : '0x1::aptos_coin::AptosCoin'); // 默认为APT
+          
       const shortCoinType = getTokenShortName(coinType);
       
       // 获取时间信息
@@ -127,7 +132,6 @@ export class StreamUtils extends BaseService {
       // 返回格式化后的数据结构
       return {
         stream_id: streamId,
-        name: safeGetFromStreamData('name', `流 ${streamId}`),
         status: statusText,
         progress: progress,
         sender: sender,
