@@ -7,7 +7,7 @@ export const mcpTools: McpTool[] = [
   {
     // 批量创建支付流工具
     name: "batch_create_stream",
-    description: "批量创建多个支付流，可以只创建一个或多个，一次最多创建200个",
+    description: "批量创建多个支付流，可以只创建一个或多个，一次最多创建200个。支持APT代币和其他代币。",
     inputSchema: {
       type: "object",
       required: ["recipients", "amounts", "token_type", "duration"],
@@ -17,33 +17,33 @@ export const mcpTools: McpTool[] = [
           items: {
             type: "string"
           },
-          description: "接收方地址列表"
+          description: "接收方地址列表，格式为0x开头的完整地址"
         },
         amounts: {
           type: "array",
           items: {
             type: "string"
           },
-          description: "对应的支付金额列表，长度必须与地址列表相同"
+          description: "对应的支付金额列表（以字符串形式表示的数值，如'0.01'），长度必须与地址列表相同"
         },
         token_type: {
           type: "string",
-          description: "代币类型"
+          description: "代币类型，可使用'APT'或'0x1::aptos_coin::AptosCoin'表示APT代币，或其他代币的完整路径"
         },
         duration: {
           type: "integer",
-          description: "持续时间（秒）"
+          description: "支付流持续时间（秒），如5分钟为300秒"
         },
         names: {
           type: "array",
           items: {
             type: "string"
           },
-          description: "可选的支付流名称列表，若不提供则自动生成"
+          description: "可选的支付流名称列表，若不提供则自动生成。长度应与recipients相同"
         },
         interval: {
           type: "integer",
-          description: "释放时间间隔（秒），默认为86400（每天）"
+          description: "释放时间间隔（秒），如每分钟释放一次为60秒，默认为86400（每天）"
         },
         start_delay: {
           type: "integer",
@@ -51,26 +51,26 @@ export const mcpTools: McpTool[] = [
         },
         cliff_time_enabled: {
           type: "boolean",
-          description: "是否启用悬崖时间，默认为true"
+          description: "是否启用悬崖时间，默认为true。启用后会在start_time时释放cliff_amount"
         },
         pauseable: {
           type: "string",
-          description: "谁可以暂停流：sender（发送方）、recipient（接收方）、both（双方）",
+          description: "谁可以暂停流：sender（发送方）、recipient（接收方）、both（双方），默认为sender",
           enum: ["sender", "recipient", "both"]
         },
         closeable: {
           type: "string",
-          description: "谁可以关闭流：sender（发送方）、recipient（接收方）、both（双方）",
+          description: "谁可以关闭流：sender（发送方）、recipient（接收方）、both（双方），默认为sender",
           enum: ["sender", "recipient", "both"]
         },
         recipient_modifiable: {
           type: "string",
-          description: "谁可以修改接收方：sender（发送方）、recipient（接收方）、both（双方）、none（无人）",
+          description: "谁可以修改接收方：sender（发送方）、recipient（接收方）、both（双方）、none（无人），默认为sender",
           enum: ["sender", "recipient", "both", "none"]
         },
         remark: {
           type: "string",
-          description: "备注信息"
+          description: "支付流的备注信息，方便记录和查询"
         }
       }
     }

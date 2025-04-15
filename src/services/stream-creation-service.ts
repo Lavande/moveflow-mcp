@@ -118,7 +118,14 @@ export class StreamCreationService extends BaseService {
       
       // 准备批量创建参数
       const recipientAddresses = recipients.map(addr => aptos.AccountAddress.from(addr));
-      const depositAmounts = amounts.map(amount => Math.floor(parseFloat(amount) * 100000000)); // 8位小数
+      const depositAmounts = amounts.map(amount => {
+        const floatAmount = parseFloat(amount);
+        if (isNaN(floatAmount)) {
+          throw new Error(`无效的金额: ${amount}`);
+        }
+        // 确保返回的是数值类型
+        return Math.floor(floatAmount * 100000000); // 8位小数
+      });
       const cliffAmounts = new Array(recipients.length).fill(0); // 无悬崖释放金额
       
       // 生成默认的流名称列表，如果没有提供
@@ -142,28 +149,27 @@ export class StreamCreationService extends BaseService {
       
       // 创建批量参数 - 使用BatchCreateParams构造器
       const batchParams = new BatchCreateParams({
+        execute: true,
         names: streamNames,
         recipients: recipientAddresses,
-        coin_type: tokenType === "APT" ? "0x1::aptos_coin::AptosCoin" : tokenType,
         deposit_amounts: depositAmounts,
         cliff_amounts: cliffAmounts,
-        // 使用SDK实际的属性名
-        cliff_time: cliffTimes,
-        start_time: startTimes,
-        stop_time: stopTimes,
-        interval: intervals,
-        pauseable: pauseables,
-        closeable: closeables,
-        recipient_modifiable: recipientModifiables,
+        cliff_time: cliffTime,
+        start_time: startTime,
+        stop_time: stopTime,
+        interval: interval,
+        pauseable: pauseable,
+        closeable: closeable,
+        recipient_modifiable: recipientModifiable,
         is_fa: false,
-        auto_withdraw: new Array(recipients.length).fill(false),
-        auto_withdraw_interval: new Array(recipients.length).fill(2592000),
+        auto_withdraw: false,
+        auto_withdraw_interval: 2592000,
         _remark: remark,
         stream_type: StreamType.TypeStream,
-      } as any); // 使用any类型断言绕过类型检查
+        coin_type: tokenType === "APT" ? "0x1::aptos_coin::AptosCoin" : tokenType,
+      });
       
       // 调用SDK批量创建流 - 使用正确的方法名
-      // 注意：调用batchCreateSteam而不是batchCreateStream（根据报错信息推测）
       const result = await this.stream.batchCreateSteam(batchParams);
       
       return JSON.stringify({
