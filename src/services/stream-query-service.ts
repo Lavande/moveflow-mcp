@@ -73,7 +73,27 @@ export class StreamQueryService extends BaseService {
       const userTxResponse = await fetch(
         `${apiUrl}/accounts/${normalizedAddress}/transactions?limit=50`
       );
+      
+      if (!userTxResponse.ok) {
+        console.log(`API响应错误，状态码: ${userTxResponse.status}`);
+        return JSON.stringify({
+          success: false,
+          error: `获取地址 ${normalizedAddress} 的交易失败: 服务器返回状态码 ${userTxResponse.status}`
+        });
+      }
+      
       const transactions = await userTxResponse.json();
+      
+      // 确保transactions是一个数组
+      if (!Array.isArray(transactions)) {
+        console.log(`API返回的交易记录不是数组:`, transactions);
+        return JSON.stringify({
+          success: true,
+          streams: [],
+          total: 0,
+          message: `地址 ${normalizedAddress} 可能不存在或没有交易记录`
+        });
+      }
       
       // 找出与MoveFlow合约相关的交易
       const moveflowTxns = transactions.filter((tx: any) => {
@@ -155,6 +175,9 @@ export class StreamQueryService extends BaseService {
   
   // 获取合约地址
   private getContractAddress(): string {
-    return config.CONTRACT_ADDRESS;
+    // 根据当前网络环境返回对应的合约地址
+    return config.APTOS_NETWORK.toLowerCase() === "mainnet"
+      ? config.NETWORK_CONTRACTS.MAINNET
+      : config.NETWORK_CONTRACTS.TESTNET;
   }
 }

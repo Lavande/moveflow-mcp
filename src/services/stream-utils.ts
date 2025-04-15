@@ -14,11 +14,11 @@ export class StreamUtils extends BaseService {
       // 格式化时间
       const formatDate = (timestamp: string) => {
         try {
-          if (!timestamp) return '未设置';
+          if (!timestamp) return null;
           const date = new Date(parseInt(timestamp) * 1000);
           return date.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
         } catch (e) {
-          return timestamp || '未知';
+          return null; // 时间戳无效时返回null而不是"未知"
         }
       };
       
@@ -115,6 +115,7 @@ export class StreamUtils extends BaseService {
       const createdAt = formatDate(safeGetFromStreamData('created_at'));
       const startTime = formatDate(safeGetFromStreamData('start_time'));
       const stopTime = formatDate(safeGetFromStreamData('stop_time'));
+      const interval = safeGetFromStreamData('interval', '0');
       
       // 获取状态
       const paused = safeGetFromStreamData('paused', false);
@@ -128,6 +129,14 @@ export class StreamUtils extends BaseService {
       
       // 进度计算
       const progress = calculateProgress();
+      
+      // 构建times对象，只包含有效时间字段
+      const times: Record<string, string> = {};
+      
+      if (createdAt) times.created = createdAt;
+      if (startTime) times.start = startTime;
+      if (stopTime) times.end = stopTime;
+      if (interval && interval !== '0') times.interval = `${interval}秒`;
       
       // 返回格式化后的数据结构
       return {
@@ -146,12 +155,7 @@ export class StreamUtils extends BaseService {
           type: coinType,
           name: shortCoinType
         },
-        times: {
-          created: createdAt,
-          start: startTime,
-          end: stopTime,
-          interval: `${safeGetFromStreamData('interval', '0')}秒`
-        },
+        times: times, // 使用动态构建的times对象
         permissions: {
           pauseable: pauseable,
           closeable: closeable,

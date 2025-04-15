@@ -18,6 +18,12 @@ export const config = {
   // MoveFlow合约地址
   CONTRACT_ADDRESS: process.env.CONTRACT_ADDRESS || "0x15a5484b9f8369dd3d60c43e4530e7c1bb82eef041bf4cf8a2090399bebde5d4",
   
+  // 测试网和主网的合约地址
+  NETWORK_CONTRACTS: {
+    MAINNET: "0x15a5484b9f8369dd3d60c43e4530e7c1bb82eef041bf4cf8a2090399bebde5d4",
+    TESTNET: "0x4836e267e5290dd8c4e21a0afa83e7c5f589005f58cc6fae76407b90f5383da"
+  },
+  
   // 常量定义
   DEFAULT_INTERVAL: 86400,         // 默认每天释放一次（单位：秒）
   DEFAULT_START_DELAY: 300,        // 默认5分钟后开始（单位：秒）
