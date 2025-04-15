@@ -76,8 +76,15 @@ export class StreamUtils extends BaseService {
         return safeGet(streamData, path, defaultValue);
       };
       
-      // 提取基本信息
-      const streamId = safeGetFromStreamData('stream_id');
+      // 提取基本信息 - 检查多个可能的ID字段名
+      const streamId = safeGetFromStreamData('id') !== '未知' 
+        ? safeGetFromStreamData('id') 
+        : (safeGetFromStreamData('stream_id') !== '未知' 
+          ? safeGetFromStreamData('stream_id') 
+          : (safeGetFromStreamData('streamId') !== '未知' 
+            ? safeGetFromStreamData('streamId') 
+            : '未知'));
+            
       const sender = safeGetFromStreamData('sender', '未知发送方')?.toString?.() || '未知发送方';
       const recipient = safeGetFromStreamData('recipient', '未知接收方')?.toString?.() || '未知接收方';
       
@@ -156,88 +163,4 @@ export class StreamUtils extends BaseService {
       };
     }
   }
-
-  // 备用方法：使用节点API直接获取流信息
-  async getFallbackStreams(address?: string): Promise<any[]> {
-    try {
-      // 获取当前网络的API端点
-      const aptosEndpoint = this.network === "mainnet" 
-        ? config.MAINNET_API
-        : config.TESTNET_API;
-      
-      // 获取有效地址
-      const effectiveAddress = address || this.stream.getSenderAddress().toString();
-      
-      console.log("正在使用备用方法查询流信息...");
-      
-      // 尝试获取流事件，使用有超时控制的fetch
-      const eventsUrl = `${aptosEndpoint}/accounts/${effectiveAddress}/events`;
-      console.log(`请求账户事件: ${eventsUrl}`);
-      
-      const eventsResponse = await fetchWithTimeout(eventsUrl);
-      const eventsData = await eventsResponse.json();
-      
-      // 筛选与流相关的事件
-      console.log("筛选流相关事件...");
-      const streamEvents = Array.isArray(eventsData) 
-        ? eventsData.filter((event: any) => 
-            event.type?.includes('stream') || 
-            event.data?.stream_id || 
-            event.data?.recipient === effectiveAddress ||
-            event.data?.sender === effectiveAddress)
-        : [];
-      
-      // 从事件中提取流ID
-      const streamIds = new Set<string>();
-      streamEvents.forEach((event: any) => {
-        if (event.data?.stream_id) {
-          streamIds.add(event.data.stream_id);
-        }
-      });
-      
-      console.log(`找到 ${streamIds.size} 个潜在的流ID`);
-      
-      // 限制处理的流ID数量，避免请求过多
-      const maxStreamsToProcess = config.MAX_STREAMS_TO_PROCESS;
-      const limitedStreamIds = Array.from(streamIds).slice(0, maxStreamsToProcess);
-      
-      if (limitedStreamIds.length < streamIds.size) {
-        console.log(`为避免超时，仅处理前 ${maxStreamsToProcess} 个流`);
-      }
-      
-      // 获取这些流的详细信息
-      const streamDetails: any[] = [];
-      let processedCount = 0;
-      
-      // 使用Promise.all并行处理多个请求，提高效率
-      await Promise.all(limitedStreamIds.map(async (streamId) => {
-        try {
-          console.log(`处理流 ${++processedCount}/${limitedStreamIds.length}: ${streamId}`);
-          
-          // 使用超时控制获取流信息
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error(`获取流 ${streamId} 信息超时`)), config.TIMEOUT.FALLBACK_FETCH)
-          );
-          const fetchPromise = this.stream.fetchStream(streamId);
-          
-          const streamInfo = await Promise.race([fetchPromise, timeoutPromise]);
-          
-          if (streamInfo) {
-            const parsedInfo = typeof streamInfo === 'string' 
-              ? JSON.parse(streamInfo) 
-              : streamInfo;
-            streamDetails.push(parsedInfo);
-          }
-        } catch (err) {
-          console.warn(`获取流 ${streamId} 的详细信息失败:`, err);
-        }
-      }));
-      
-      console.log(`备用方法成功获取了 ${streamDetails.length} 条流信息`);
-      return streamDetails;
-    } catch (error) {
-      console.error("备用获取流方法失败:", error);
-      return [];
-    }
-  }
-} 
+}

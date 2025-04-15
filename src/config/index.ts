@@ -15,6 +15,9 @@ export const config = {
   MAINNET_API: "https://fullnode.mainnet.aptoslabs.com/v1",
   TESTNET_API: "https://fullnode.testnet.aptoslabs.com/v1",
   
+  // MoveFlow合约地址
+  CONTRACT_ADDRESS: process.env.CONTRACT_ADDRESS || "0x15a5484b9f8369dd3d60c43e4530e7c1bb82eef041bf4cf8a2090399bebde5d4",
+  
   // 常量定义
   DEFAULT_INTERVAL: 86400,         // 默认每天释放一次（单位：秒）
   DEFAULT_START_DELAY: 300,        // 默认5分钟后开始（单位：秒）
