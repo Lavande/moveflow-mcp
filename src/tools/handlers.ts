@@ -133,6 +133,42 @@ export class ToolHandlers {
   }
 
   /**
+   * 暂停支付流
+   */
+  async handlePauseStream(args: any): Promise<any> {
+    const pauseResult = await this.moveflowService.pauseStream(
+      args.stream_id as string,
+      args.is_fa as boolean
+    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(parseServiceResult(pauseResult))
+        }
+      ]
+    };
+  }
+
+  /**
+   * 恢复支付流
+   */
+  async handleResumeStream(args: any): Promise<any> {
+    const resumeResult = await this.moveflowService.resumeStream(
+      args.stream_id as string,
+      args.is_fa as boolean
+    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(parseServiceResult(resumeResult))
+        }
+      ]
+    };
+  }
+
+  /**
    * 查询钱包余额
    */
   async handleGetWalletBalance(args: any): Promise<any> {
@@ -166,6 +202,12 @@ export class ToolHandlers {
       
       case "cancel_stream":
         return this.handleCancelStream(args);
+      
+      case "pause_stream":
+        return this.handlePauseStream(args);
+      
+      case "resume_stream":
+        return this.handleResumeStream(args);
       
       case "get_wallet_balance":
         return this.handleGetWalletBalance(args);

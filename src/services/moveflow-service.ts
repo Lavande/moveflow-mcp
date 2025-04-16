@@ -70,6 +70,16 @@ export class MoveFlowService extends BaseService {
     return this.streamManagementService.cancelStream(streamId);
   }
 
+  // 暂停支付流
+  async pauseStream(streamId: string, isFungibleAsset: boolean = false): Promise<string> {
+    return this.streamManagementService.pauseStream(streamId, isFungibleAsset);
+  }
+
+  // 恢复支付流
+  async resumeStream(streamId: string, isFungibleAsset: boolean = false): Promise<string> {
+    return this.streamManagementService.resumeStream(streamId, isFungibleAsset);
+  }
+
   // 查询钱包余额
   async getWalletBalance(address?: string, tokenType: string = "0x1::aptos_coin::AptosCoin"): Promise<string> {
     return this.walletService.getWalletBalance(address, tokenType);

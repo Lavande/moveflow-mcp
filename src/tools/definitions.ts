@@ -121,6 +121,46 @@ export const mcpTools: McpTool[] = [
     }
   },
   {
+    // 暂停支付流工具
+    name: "pause_stream",
+    description: "暂停支付流，暂停后资金不再释放，但可以恢复继续支付",
+    inputSchema: {
+      type: "object",
+      required: ["stream_id"],
+      properties: {
+        stream_id: {
+          type: "string",
+          description: "支付流ID"
+        },
+        is_fa: {
+          type: "boolean",
+          description: "是否是可替代资产（FA），默认为false",
+          default: false
+        }
+      }
+    }
+  },
+  {
+    // 恢复支付流工具
+    name: "resume_stream",
+    description: "恢复被暂停的支付流，使其继续释放资金",
+    inputSchema: {
+      type: "object",
+      required: ["stream_id"],
+      properties: {
+        stream_id: {
+          type: "string",
+          description: "支付流ID"
+        },
+        is_fa: {
+          type: "boolean",
+          description: "是否是可替代资产（FA），默认为false",
+          default: false
+        }
+      }
+    }
+  },
+  {
     // 查询钱包余额工具
     name: "get_wallet_balance",
     description: "查询指定钱包地址的余额，支持使用简化的代币名称如'APT'或完整的类型名称如'0x1::aptos_coin::AptosCoin'",
