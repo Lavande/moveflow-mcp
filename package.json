@@ -5,8 +5,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "ts-node src/mcp-server.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:streams": "ts-node test-data/test-streams.ts"
   },
   "repository": {
     "type": "git",
@@ -32,8 +33,12 @@
     "@moveflow/aptos-sdk": "^0.0.12",
     "@types/node": "^22.14.0",
     "dotenv": "^16.4.7",
+    "node-fetch": "^2.7.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.12"
   }
 }

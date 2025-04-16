@@ -23,3 +23,7 @@ Thumbs.db
 
 # 文档
 docs/
+
+# 测试数据和脚本
+test-data/
+test/

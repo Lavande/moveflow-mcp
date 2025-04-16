@@ -144,10 +144,36 @@ export class StreamQueryService extends BaseService {
       
       // 将事件转换为流信息
       const streams = [];
-      for (const [_, event] of streamEventsMap.entries()) {
+      for (const [streamId, event] of streamEventsMap.entries()) {
         try {
-          // 直接使用事件数据
-          const formattedStream = this.streamUtils.formatStreamData(event.data);
+          // 事件数据通常并不完整，可能缺少判断状态所需的关键信息
+          // 我们基于事件类型进行简单的状态推断
+          
+          const eventData = event.data || {};
+          const eventType = event.type || "";
+          
+          // 尝试从事件类型判断状态
+          if (eventType.includes("CloseStreamEvent") || eventType.includes("close_stream")) {
+            eventData.closed = true;
+          } else if (eventType.includes("PauseStreamEvent") || eventType.includes("pause_stream")) {
+            eventData.paused = true;
+          } else if (eventType.includes("ResumeStreamEvent") || eventType.includes("resume_stream")) {
+            eventData.paused = false;
+          }
+          
+          // 确保事件数据包含ID字段
+          if (!eventData.id && streamId) {
+            eventData.id = streamId;
+          }
+          
+          // 查找更多时间相关信息
+          if (eventType.includes("CreateStreamEvent") || eventType.includes("create_stream")) {
+            // 创建事件通常包含开始和结束时间
+            // 已有的数据中这些字段保留
+          }
+          
+          // 直接使用事件数据，现在formatStreamData可以判断是否有足够信息决定状态
+          const formattedStream = this.streamUtils.formatStreamData(eventData, true); // 添加标志表明这是从事件获取的数据
           streams.push(formattedStream);
         } catch (error) {
           // 错误处理但不输出日志
